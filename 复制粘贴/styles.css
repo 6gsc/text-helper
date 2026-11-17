@@ -1,0 +1,16 @@
+/* 极简状态提示 */
+#stealth-clipboard-status {
+    position: fixed !important;
+    bottom: 8px !important;
+    right: 8px !important;
+    padding: 4px 8px !important;
+    background: rgba(0,0,0,0.6) !important;
+    color: #ccc !important;
+    font-size: 11px !important;
+    font-family: sans-serif !important;
+    z-index: 2147483647 !important;
+    opacity: 0 !important;
+    transition: opacity 0.2s !important;
+    pointer-events: none !important;
+}
+#stealth-clipboard-status.scs-show { opacity: 1 !important; }
