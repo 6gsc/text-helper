@@ -1,0 +1,21 @@
+{
+  "interval_seconds": 20,
+  "monitor_index": 1,
+  "region": null,
+  "ws_host": "127.0.0.1",
+  "ws_port": 8765,
+  "autofill": false,
+  "foreground_browsers": ["chrome", "msedge", "360se", "360chrome", "qqbrowser", "sogouexplorer"],
+  "require_foreground": true,
+  "ocr": {
+    "use_local": false
+  },
+  "llm": {
+    "base_url": "https://api.openai.com/v1/chat/completions",
+    "api_key": "在此填入你的 API Key",
+    "model": "gpt-4o-mini",
+    "timeout_seconds": 30,
+    "temperature": 0
+  },
+  "cache_path": "answer_cache.json"
+}

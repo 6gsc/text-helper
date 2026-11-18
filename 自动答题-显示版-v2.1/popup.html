@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body{width:160px;padding:10px;font:12px sans-serif;background:#222;color:#aaa}
+.s{display:flex;justify-content:space-between;margin-bottom:8px}
+.d{width:8px;height:8px;border-radius:50%;background:#555}
+.d.on{background:#4a4}
+button{width:100%;padding:6px;border:none;background:#333;color:#aaa;cursor:pointer;margin-bottom:6px}
+button:hover{background:#444}
+.k{font-size:10px;color:#666;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="s"><span>状态</span><span class="d" id="d"></span></div>
+<button id="b">切换</button>
+<div class="k">Q-开关 C-复制 V-粘贴 S-解锁<br>1-填空 2-实验 3-设计 4-选择 5-计算<br>均需Alt+</div>
+<script src="popup.js"></script>
+</body>
+</html>

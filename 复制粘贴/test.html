@@ -30,6 +30,29 @@
         .api-item { padding: 8px; background: #f9f9f9; border-radius: 4px; font-size: 13px; }
         .api-item.ok { border-left: 3px solid #4caf50; }
         .api-item.fail { border-left: 3px solid #f44336; }
+        /* ===== AI 进阶层：答案面板 / 状态灯 / 模拟控制 ===== */
+        #ai-panel { position: fixed; right: 16px; bottom: 48px; width: 300px; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.82); color: #ddd; font-size: 12px; border-radius: 6px; z-index: 2147483646; display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+        #ai-panel.ai-open { display: block; }
+        .ai-panel-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.12); font-size: 11px; color: #9aa0a6; position: sticky; top: 0; background: rgba(0,0,0,0.9); }
+        .ai-panel-body { padding: 6px 10px 10px; }
+        .ai-row { display: flex; gap: 6px; padding: 4px 0; line-height: 1.5; border-bottom: 1px dashed rgba(255,255,255,0.06); }
+        .ai-row:last-child { border-bottom: none; }
+        .ai-no { flex: 0 0 18px; color: #7a7a7a; }
+        .ai-tag { flex: 0 0 auto; font-size: 10px; padding: 0 4px; border-radius: 3px; background: rgba(255,255,255,0.1); color: #9aa0a6; height: 16px; line-height: 16px; margin-top: 1px; }
+        .ai-ans { flex: 1 1 auto; word-break: break-word; white-space: pre-wrap; }
+        .ai-row.low .ai-ans { color: #e6a23c; }
+        .ai-row.low .ai-ans::before { content: "⚠ "; }
+        .ai-row.empty .ai-ans { color: #6b6b6b; }
+        #ai-light { position: fixed; right: 16px; bottom: 16px; width: 10px; height: 10px; border-radius: 50%; background: rgba(128,128,128,0.4); opacity: 0.4; z-index: 2147483647; pointer-events: none; transition: background 0.2s, opacity 0.2s; }
+        #ai-light.working { background: #e6b800; opacity: 1; animation: ai-breathe 1.2s ease-in-out infinite; }
+        #ai-light.ok { background: #34a853; opacity: 1; }
+        #ai-light.fail { background: #ea4335; opacity: 1; }
+        @keyframes ai-breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+        .ai-mock-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .ai-mock-bar button { margin: 0; }
+        .ai-mode { font-size: 13px; color: #444; display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+        #ai-stash-view { font-family: monospace; font-size: 12px; background: #1e1e1e; color: #d4d4d4; padding: 10px; border-radius: 4px; min-height: 40px; white-space: pre-wrap; word-break: break-word; }
+        .ai-edit { min-height: 60px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff; font-size: 14px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -44,6 +67,10 @@
             <div class="shortcut"><code>Alt+S</code> 解锁</div>
             <div class="shortcut"><code>Alt+D</code> 深度解锁</div>
             <div class="shortcut"><code>Alt+1~5</code> 预设</div>
+            <div class="shortcut"><code>Alt+E</code> 截屏识别</div>
+            <div class="shortcut"><code>Alt+A</code> 显示答案面板</div>
+            <div class="shortcut"><code>Alt+X</code> 隐藏答案面板</div>
+            <div class="shortcut"><code>Alt+Z</code> 粘贴 AI 答案</div>
         </div>
     </div>
 
@@ -77,6 +104,41 @@
         <h2>⚠️ 防护状态</h2>
         <div class="status" id="protection-status">检测中...</div>
     </div>
+
+    <div class="section">
+        <h2>🧠 AI 答案面板（模拟）</h2>
+        <p style="font-size:12px;color:#666;margin-top:0;">页面级模拟，预览产品形态；扩展真实实现落地后，取消勾选「页面模拟模式」再测真链路。按 <code>Alt+A</code> 显示 / <code>Alt+X</code> 关闭，<code>Alt+E</code> 触发一轮模拟识别。</p>
+        <div class="ai-mock-bar">
+            <button onclick="aiMockRecognize('bank')">模拟识别（题库命中）</button>
+            <button onclick="aiMockRecognize('mixed')">模拟识别（AI 混合）</button>
+            <button onclick="aiMockFail()">模拟失败</button>
+            <button onclick="aiMockClear()">清空答案</button>
+            <label class="ai-mode"><input type="checkbox" id="ai-sim-mode" checked> 页面模拟模式</label>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>💡 状态指示灯</h2>
+        <p style="font-size:12px;color:#666;margin-top:0;">右下角圆点四态比对：灰=空闲，黄=识别中（呼吸），绿=成功（2s 回灰），红=失败（2s 回灰）。</p>
+        <div class="ai-mock-bar">
+            <button onclick="aiSetLight('idle')">空闲</button>
+            <button onclick="aiSetLight('working')">识别中</button>
+            <button onclick="aiSetLight('ok')">成功</button>
+            <button onclick="aiSetLight('fail')">失败</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>⌨️ 双通道粘贴测试</h2>
+        <p style="font-size:12px;color:#666;margin-top:0;"><code>Alt+Z</code> 只写 AI 暂存区（<code>execCommand('insertText')</code>），<code>Alt+V</code> 只写系统剪贴板，两条通道互不覆盖。先点「模拟识别」再聚焦下方输入框按 <code>Alt+Z</code>。</p>
+        <input type="text" id="ai-paste-input" placeholder="点击这里，按 Alt+Z 粘贴最新 AI 答案">
+        <textarea id="ai-paste-ta" placeholder="或在这里粘贴（支持多行答案）"></textarea>
+        <div class="ai-edit" id="ai-paste-ce" contenteditable="true">或点击这段富文本区域，按 Alt+Z</div>
+        <p style="font-size:12px;color:#666;">AI 暂存区当前内容（只读）：</p>
+        <div id="ai-stash-view">（空）</div>
+    </div>
+
+    <div id="ai-light"></div>
 
     <script>
         var log = document.getElementById('detection-log');
@@ -146,6 +208,188 @@
         addLog('测试页面加载完成', 'info');
         addLog('如果看到右下角"✓ 助手就绪 v2.0"，说明插件已加载', 'info');
         addLog('请切换到其他标签页再切回来，观察API检测结果', 'info');
+    </script>
+
+    <script>
+        // ===== AI 进阶层模拟（独立于上方切屏检测脚本，互不干扰） =====
+        var AI_LOW_CONF = 0.65;           // 低于此置信度标 ⚠
+        var aiBusy = false;               // 进行中标志位，防并发（FR-1）
+        var aiLightTimer = null;
+        var aiPanelEl = null;             // 面板引用；Alt+X 时从 DOM 移除（FR-5）
+        var aiStash = null;               // AI 暂存区：最新一批答案（FR-8）
+
+        // 模拟数据：覆盖需求文档 §3 全部题型
+        var AI_BATCH_MIXED = [
+            { no: 1, type: '单选', answer: 'B', conf: 0.96, source: '题库' },
+            { no: 2, type: '多选', answer: 'ACD', conf: 0.91, source: '题库' },
+            { no: 3, type: '填空', answer: '192.168.1.1|255.255.255.0', conf: 0.88, source: 'AI' },
+            { no: 4, type: '判断', answer: '对', conf: 0.94, source: '题库' },
+            { no: 5, type: '计算', answer: 'x = 3.75，取整为 4', conf: 0.62, source: 'AI' },
+            { no: 6, type: '叙述', answer: '① 先验算边界条件\n② 再代入校验\n③ 最后核对量纲', conf: 0.55, source: 'AI' },
+            { no: 7, type: '单选', answer: '', conf: 0, source: '' }
+        ];
+        var AI_BATCH_BANK = [
+            { no: 1, type: '单选', answer: 'B', conf: 0.97, source: '题库' },
+            { no: 2, type: '判断', answer: '对', conf: 0.95, source: '题库' },
+            { no: 3, type: '填空', answer: '255.255.255.0', conf: 0.92, source: '题库' }
+        ];
+
+        function aiSimOn() {
+            var box = document.getElementById('ai-sim-mode');
+            return box && box.checked;
+        }
+
+        function aiSetLight(state) {
+            var light = document.getElementById('ai-light');
+            if (aiLightTimer) { clearTimeout(aiLightTimer); aiLightTimer = null; }
+            light.className = state === 'idle' ? '' : state;
+            if (state === 'ok' || state === 'fail') {
+                aiLightTimer = setTimeout(function () { light.className = ''; aiLightTimer = null; }, 2000);
+            }
+        }
+
+        function aiUpdateStashView() {
+            var view = document.getElementById('ai-stash-view');
+            if (!aiStash || !aiStash.length) { view.textContent = '（空）'; return; }
+            var lines = aiStash.map(function (q) {
+                return q.no + '. [' + q.type + '] ' + (q.answer || '—') + (q.source ? '（' + q.source + '）' : '');
+            });
+            view.textContent = lines.join('\n');
+        }
+
+        function aiBuildPanel() {
+            var panel = document.createElement('div');
+            panel.id = 'ai-panel';
+            var head = document.createElement('div');
+            head.className = 'ai-panel-head';
+            var total = aiStash ? aiStash.length : 0;
+            var bank = aiStash ? aiStash.filter(function (q) { return q.source === '题库'; }).length : 0;
+            var aiN = aiStash ? aiStash.filter(function (q) { return q.source === 'AI'; }).length : 0;
+            var overview = document.createElement('span');
+            overview.textContent = total + ' 题 | ' + bank + ' 题库 ' + aiN + ' AI';
+            var hint = document.createElement('span');
+            hint.textContent = 'Alt+X 关闭';
+            head.appendChild(overview);
+            head.appendChild(hint);
+            var body = document.createElement('div');
+            body.className = 'ai-panel-body';
+            (aiStash || []).forEach(function (q) {
+                var row = document.createElement('div');
+                var empty = !q.answer;
+                row.className = 'ai-row' + (empty ? ' empty' : (q.conf < AI_LOW_CONF ? ' low' : ''));
+                var no = document.createElement('span');
+                no.className = 'ai-no';
+                no.textContent = q.no;
+                var tag = document.createElement('span');
+                tag.className = 'ai-tag';
+                tag.textContent = q.type;
+                var ans = document.createElement('span');
+                ans.className = 'ai-ans';
+                ans.textContent = empty ? '—' : q.answer;
+                row.appendChild(no); row.appendChild(tag); row.appendChild(ans);
+                body.appendChild(row);
+            });
+            if (!total) {
+                var tip = document.createElement('div');
+                tip.className = 'ai-row empty';
+                tip.innerHTML = '<span class="ai-no"></span><span class="ai-tag">提示</span><span class="ai-ans">暂无答案，先按 Alt+E 识别</span>';
+                body.appendChild(tip);
+            }
+            panel.appendChild(head);
+            panel.appendChild(body);
+            return panel;
+        }
+
+        function aiShowPanel() {
+            if (!aiSimOn()) return;
+            if (!aiPanelEl || !aiPanelEl.isConnected) {
+                aiPanelEl = aiBuildPanel();
+                document.documentElement.appendChild(aiPanelEl);
+            } else {
+                var fresh = aiBuildPanel();       // 原地刷新内容
+                aiPanelEl.replaceWith(fresh);
+                aiPanelEl = fresh;
+            }
+            addLog('面板已显示', 'info');
+        }
+
+        function aiHidePanel() {
+            if (!aiSimOn()) return;
+            if (aiPanelEl && aiPanelEl.isConnected) {
+                aiPanelEl.remove();               // 从 DOM 移除，不留痕迹
+                addLog('面板已关闭并从 DOM 移除', 'info');
+            }
+            aiPanelEl = null;
+        }
+
+        function aiMockRecognize(kind) {
+            if (!aiSimOn() || aiBusy) return;
+            aiBusy = true;
+            aiSetLight('working');
+            addLog('已截屏，上传识别中...', 'info');
+            setTimeout(function () {
+                aiStash = (kind === 'bank' ? AI_BATCH_BANK : AI_BATCH_MIXED).map(function (q) {
+                    return { no: q.no, type: q.type, answer: q.answer, conf: q.conf, source: q.source };
+                });
+                aiUpdateStashView();
+                aiSetLight('ok');
+                var n = aiStash.filter(function (q) { return q.answer; }).length;
+                addLog('✓ 已识别 ' + n + ' 题（来源：' + kind + '）', 'blocked');
+                if (aiPanelEl && aiPanelEl.isConnected) aiShowPanel();  // 面板开着则自动刷新
+                aiBusy = false;
+            }, 900);
+        }
+
+        function aiMockFail() {
+            if (!aiSimOn() || aiBusy) return;
+            aiBusy = true;
+            aiSetLight('working');
+            setTimeout(function () {
+                aiSetLight('fail');
+                addLog('✗ 接口异常（面板保留上一批内容）', 'triggered');
+                aiBusy = false;
+            }, 500);
+        }
+
+        function aiMockClear() {
+            if (!aiSimOn()) return;
+            aiStash = null;
+            aiUpdateStashView();
+            aiHidePanel();
+            addLog('暂存区已清空', 'info');
+        }
+
+        function aiEditable(el) {
+            if (!el) return false;
+            var tag = el.tagName;
+            return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+        }
+
+        function aiPaste() {
+            if (!aiSimOn()) return;
+            if (!aiStash || !aiStash.length) { addLog('⚠ 暂无 AI 答案', 'triggered'); return; }
+            var target = document.activeElement;
+            if (!aiEditable(target)) { addLog('⚠ 请先点击输入框再按 Alt+Z', 'triggered'); return; }
+            var first = null;
+            for (var i = 0; i < aiStash.length; i++) { if (aiStash[i].answer) { first = aiStash[i]; break; } }
+            if (!first) { addLog('⚠ 暂无 AI 答案', 'triggered'); return; }
+            document.execCommand('insertText', false, first.answer);  // 与真实扩展同通道，不碰剪贴板
+            addLog('Alt+Z 已写入：第 ' + first.no + ' 题答案（剪贴板未被触碰）', 'blocked');
+        }
+
+        // 捕获阶段监听，判据与 content.js 第 213 行一致
+        document.addEventListener('keydown', function (e) {
+            if (!e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) return;
+            if (!aiSimOn()) return;
+            switch (e.code) {
+                case 'KeyE': e.preventDefault(); aiMockRecognize('mixed'); break;
+                case 'KeyA': e.preventDefault(); aiShowPanel(); break;
+                case 'KeyX': e.preventDefault(); aiHidePanel(); break;
+                case 'KeyZ': e.preventDefault(); aiPaste(); break;
+            }
+        }, true);
+
+        addLog('AI 模拟层就绪：Alt+E 识别 / Alt+A 面板 / Alt+X 关闭 / Alt+Z 粘贴', 'info');
     </script>
 </body>
 </html>

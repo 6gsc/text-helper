@@ -1,0 +1,59 @@
+{
+  "manifest_version": 3,
+  "name": "Text Helper AI",
+  "version": "2.1.0",
+  "description": "文本辅助工具",
+  "permissions": [
+    "activeTab",
+    "clipboardRead",
+    "clipboardWrite",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["presets-data.js", "content.js", "ai-config.js", "question-bank.js", "ai-panel.js"],
+      "css": ["styles.css"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.svg",
+      "48": "icons/icon48.svg",
+      "128": "icons/icon128.svg"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.svg",
+    "48": "icons/icon48.svg",
+    "128": "icons/icon128.svg"
+  },
+  "commands": {
+    "toggle-plugin": {
+      "suggested_key": { "default": "Alt+Q" },
+      "description": "启用/禁用插件"
+    },
+    "stealth-copy": {
+      "suggested_key": { "default": "Alt+C" },
+      "description": "隐蔽复制"
+    },
+    "stealth-paste": {
+      "suggested_key": { "default": "Alt+V" },
+      "description": "隐蔽粘贴"
+    },
+    "deep-unlock": {
+      "suggested_key": { "default": "Alt+D" },
+      "description": "深度解锁"
+    }
+  }
+}

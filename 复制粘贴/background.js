@@ -64,3 +64,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 });
+ 
+ // ========== 自动答题：本地 helper WebSocket 客户端 ==========
+ // 仅连接 127.0.0.1 回环，断线自动重连；helper 离线时插件原有功能完全不受影响
+ (function () {
+     const WS_URL = 'ws://127.0.0.1:8765';
+     let ws = null;
+     let retryDelay = 2000;
+     let forwardingTabId = null;
+ 
+     function forwardToTabs(message) {
+         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+             (tabs.length ? tabs : [{ id: forwardingTabId }]).forEach(tab => {
+                 if (!tab?.id) return;
+                 forwardingTabId = tab.id;
+                 chrome.tabs.sendMessage(tab.id, message, () => void chrome.runtime.lastError);
+             });
+         });
+     }
+ 
+     function connect() {
+         try { ws = new WebSocket(WS_URL); } catch (e) { scheduleReconnect(); return; }
+         ws.onopen = () => {
+             retryDelay = 2000;
+             console.log('[助手] 已连接本地答题助手');
+         };
+         ws.onmessage = (event) => {
+             let data;
+             try { data = JSON.parse(event.data); } catch (e) { return; }
+             if (data?.type === 'answer') {
+                 forwardToTabs({ action: 'autoAnswer', payload: data });
+             }
+         };
+         ws.onclose = () => { ws = null; scheduleReconnect(); };
+         ws.onerror = () => { try { ws && ws.close(); } catch (e) {} };
+     }
+ 
+     function scheduleReconnect() {
+         setTimeout(connect, retryDelay);
+         retryDelay = Math.min(retryDelay * 2, 30000);
+     }
+ 
+     connect();
+ })();

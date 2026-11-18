@@ -1,0 +1,9 @@
+mss>=9.0
+numpy>=1.24
+pillow>=10.0
+websockets>=12.0
+requests>=2.31
+# 本地 OCR（可选，未安装时走视觉 LLM 直接识图）
+# paddleocr>=2.7
+# 全局快捷键开关（可选）
+# keyboard>=0.13
